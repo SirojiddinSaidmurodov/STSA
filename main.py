@@ -1,15 +1,13 @@
-import time
-
 import numpy as np
-from scipy.optimize import linprog
 
-start = time.time()
-c = np.genfromtxt("c.csv", delimiter=",", usemask=True)
-A_ub = np.genfromtxt("aub.csv", delimiter=",", usemask=True)
-b_ub = np.genfromtxt("bub.csv", delimiter=",", usemask=True)
-A_eq = np.genfromtxt("aeq.csv", delimiter=",", usemask=True)
-b_eq = np.genfromtxt("beq.csv", delimiter=",", usemask=True)
-print(linprog(c, A_ub, b_ub, A_eq, b_eq))
-stop = time.time()
-print("Время :")
-print(stop - start)
+import simplex
+
+if __name__ == '__main__':
+    sim = simplex.Simplex(func=np.array([1, 2], dtype=float),
+                          bounds_matrix=np.array([[7, 3, -1, 0, 0, 0],
+                                                  [2, 7, 0, -1, 0, 0],
+                                                  [6, 4, 0, 0, -1, 0],
+                                                  [8, 2, 0, 0, 0, -1]], dtype=float),
+                          bounds_vector=np.array([13, 11, 10, 13], dtype=float))
+    print(sim)
+    sim.solve(debug=True)
