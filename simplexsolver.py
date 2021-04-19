@@ -10,7 +10,7 @@ class SimplexSolver:
     def __init__(self,
                  func: np.ndarray,
                  bounds_matrix: np.ndarray,
-                 bounds_vector: np.ndarray):
+                 bounds_vector: np.ndarray, precision=4):
         """
         Initializing the solver
         :param func : The coefficients of the linear objective function to be minimized.
@@ -21,11 +21,13 @@ class SimplexSolver:
         :param bounds_vector : The equality constraint vector. Each element of ``bounds_matrix @ x`` must equal
         the corresponding element of ``bounds_vector``.
         """
-        np.set_printoptions(precision=4, suppress=True, threshold=np.inf, linewidth=np.inf)
+        np.set_printoptions(precision=precision, suppress=True, threshold=np.inf, linewidth=np.inf)
         self.func, self.bounds_matrix, self.bounds_vector = func.copy(), bounds_matrix.copy(), bounds_vector.copy()
         self.simplex_bound_coefficients: np.ndarray
         self.obj_function_coefficients: np.ndarray
         self.c_basis: np.ndarray
+        self.fun = None
+        self.x = None
 
     def solve(self, debug=False):
         """Solve method
@@ -35,6 +37,7 @@ class SimplexSolver:
         self.__init_simplex_matrix()
         self.__first_phase_solve()
         self.__second_phase_solve()
+        self.add_results()
 
     def __init_simplex_matrix(self):
         n, m = self.bounds_matrix.shape
@@ -141,3 +144,15 @@ class SimplexSolver:
         if rate.sum() == rate.size:
             return True
         return False
+
+    def add_results(self):
+        self.fun = self.__calc_rate()[0].item()
+        templist = []
+        for i in range(1, self.func.size + 1):
+            if i in self.c_basis:
+                templist.append(self.simplex_bound_coefficients[self.c_basis.tolist().index(i), 0])
+            else:
+                templist.append(0)
+        self.x = np.array(templist)
+
+        logging.debug('\nx: \n' + str(self.x) + '\n\nfunc:' + str(self.fun))
