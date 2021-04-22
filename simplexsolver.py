@@ -22,6 +22,7 @@ class SimplexSolver:
         the corresponding element of ``bounds_vector``.
         """
         np.set_printoptions(precision=precision, suppress=True, threshold=np.inf, linewidth=np.inf)
+
         self.func, self.bounds_matrix, self.bounds_vector = func.copy(), bounds_matrix.copy(), bounds_vector.copy()
         self.simplex_bound_coefficients: np.ndarray
         self.obj_function_coefficients: np.ndarray
@@ -40,6 +41,9 @@ class SimplexSolver:
         self.add_results()
 
     def __init_simplex_matrix(self):
+        """Inner method for initializing self.simplex_bound_coefficients: adds artificial basis and saves
+         their column indexes
+        """
         n, m = self.bounds_matrix.shape
         self.simplex_bound_coefficients = np.hstack(
             (np.column_stack((self.bounds_vector.transpose(), self.bounds_matrix)),
@@ -62,23 +66,7 @@ class SimplexSolver:
                       'current coefficients of objective function:\n' +
                       str(self.obj_function_coefficients) + '\n\n')
         for i in range(n):
-            rate: np.ndarray = self.__calc_rate()
-            rate = rate[1:]
-            new_var_column = rate.tolist().index(max(rate)) + 1
-            new_var_row = self.__find_row_index(p_0=self.simplex_bound_coefficients[:, 0],
-                                                p_n=self.simplex_bound_coefficients[:, new_var_column])
-            logging.debug('New basis row' + str(new_var_row) + '\ncurrent basis' + str(self.c_basis))
-
-            self.simplex_bound_coefficients[new_var_row, :] = \
-                self.simplex_bound_coefficients[new_var_row, :] / \
-                self.simplex_bound_coefficients[new_var_row, new_var_column]
-
-            self.c_basis[new_var_row] = new_var_column
-            self.__calc_c_basis(new_var_row, new_var_column)
-            logging.debug('=====================================\n'
-                          'current coefficients of objective function:\n' + str(self.obj_function_coefficients) + '\n')
-            logging.debug('=====================================\n'
-                          'current basis vars:\n' + str(self.simplex_bound_coefficients) + '\n\n')
+            self.__iterate()
 
     def __second_phase_solve(self):
         n, m = self.bounds_matrix.shape
@@ -91,24 +79,30 @@ class SimplexSolver:
                       'current simplex bounds:\n' + str(self.simplex_bound_coefficients)
                       + '\nbasis:\n' + str(self.c_basis) + '\n\n')
         while not self.__is_solved():
-            rate: np.ndarray = self.__calc_rate()
-            rate = rate[1:]
-            new_var_column = rate.tolist().index(max(rate)) + 1
-            new_var_row = self.__find_row_index(p_0=self.simplex_bound_coefficients[:, 0],
-                                                p_n=self.simplex_bound_coefficients[:, new_var_column])
-            logging.debug('New basis row' + str(new_var_row))
-            self.simplex_bound_coefficients[new_var_row, :] = \
-                self.simplex_bound_coefficients[new_var_row, :] / \
-                self.simplex_bound_coefficients[new_var_row, new_var_column]
+            self.__iterate()
 
-            self.c_basis[new_var_row] = new_var_column
-            self.__calc_c_basis(new_var_row, new_var_column)
-            logging.debug('=====================================\n'
-                          'current coefficients of objective function:\n' + str(self.obj_function_coefficients) + '\n')
-            logging.debug('=====================================\n'
-                          'current basis vars:\n' + str(self.simplex_bound_coefficients) + '\n\n')
+    def __iterate(self):
+        """One iteration of simplex algorithm"""
+        rate: np.ndarray = self.__calc_rate()
+        rate = rate[1:]
+        new_var_column = rate.tolist().index(max(rate)) + 1
+        new_var_row = self.__find_row_index(p_0=self.simplex_bound_coefficients[:, 0],
+                                            p_n=self.simplex_bound_coefficients[:, new_var_column])
+        logging.debug('New basis row' + str(new_var_row) + '\ncurrent basis' + str(self.c_basis))
+        self.simplex_bound_coefficients[new_var_row, :] = \
+            self.simplex_bound_coefficients[new_var_row, :] / \
+            self.simplex_bound_coefficients[new_var_row, new_var_column]
 
-    def __find_row_index(self, p_0, p_n):
+        self.c_basis[new_var_row] = new_var_column  # writing column index of new basis vector
+        self.__calc_c_basis(new_var_row, new_var_column)
+        logging.debug('=====================================\n'
+                      'current coefficients of objective function:\n' + str(self.obj_function_coefficients) + '\n')
+        logging.debug('=====================================\n'
+                      'current basis vars:\n' + str(self.simplex_bound_coefficients) + '\n\n')
+
+    @staticmethod
+    def __find_row_index(p_0, p_n):
+        """Method for finding row index where 1 of the basis vector should appear"""
         if (p_n > 0).sum() > 0:
             candidate_indexes: np.ndarray = p_0 / p_n
             can = candidate_indexes.copy()
@@ -126,11 +120,12 @@ class SimplexSolver:
         coefficients = np.array(coefficients).transpose()
 
         rate = (np.dot(coefficients, self.simplex_bound_coefficients)) - self.obj_function_coefficients
-        logging.debug('==============================================\n'
+        logging.debug('=====================\n'
                       'rates:\n' + str(rate) + '\n\n')
         return rate
 
     def __calc_c_basis(self, row, column):
+        """Method for recalculating simplex table coefficients"""
         m, n = self.simplex_bound_coefficients.shape
         for i in range(m):
             if i != row:
