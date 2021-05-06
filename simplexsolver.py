@@ -38,7 +38,8 @@ class SimplexSolver:
         self.__init_simplex_matrix()
         self.__first_phase_solve()
         self.__second_phase_solve()
-        self.add_results()
+        self.__add_results()
+        self.__dump()
 
     def __init_simplex_matrix(self):
         """Inner method for initializing self.simplex_bound_coefficients: adds artificial basis and saves
@@ -66,25 +67,24 @@ class SimplexSolver:
                       'current coefficients of objective function:\n' +
                       str(self.obj_function_coefficients) + '\n\n')
         for i in range(n):
-            self.__iterate()
+            self.__iterate(m + n)
 
     def __second_phase_solve(self):
         n, m = self.bounds_matrix.shape
-        self.obj_function_coefficients = np.hstack((np.zeros((1,)), self.func))
+        self.obj_function_coefficients = np.hstack((np.hstack((np.zeros((1,)), self.func)), np.zeros((n,))))
         logging.debug('===================== SECOND PHASE ========================\n'
                       'current coefficients of objective function:\n' +
                       str(self.obj_function_coefficients) + '\n\n')
-        self.simplex_bound_coefficients = self.simplex_bound_coefficients[:, :m + 1]
         logging.debug('=============================================\n'
                       'current simplex bounds:\n' + str(self.simplex_bound_coefficients)
                       + '\nbasis:\n' + str(self.c_basis) + '\n\n')
-        while not self.__is_solved():
-            self.__iterate()
+        while not self.__is_solved(m):
+            self.__iterate(m)
 
-    def __iterate(self):
+    def __iterate(self, end):
         """One iteration of simplex algorithm"""
         rate: np.ndarray = self.__calc_rate()
-        rate = rate[1:]
+        rate = rate[1:end]
         new_var_column = rate.tolist().index(max(rate)) + 1
         new_var_row = self.__find_row_index(p_0=self.simplex_bound_coefficients[:, 0],
                                             p_n=self.simplex_bound_coefficients[:, new_var_column])
@@ -134,13 +134,13 @@ class SimplexSolver:
                     self.simplex_bound_coefficients[i, column].item() *
                     self.simplex_bound_coefficients[row, :])
 
-    def __is_solved(self):
-        rate: np.ndarray = self.__calc_rate()[1:] <= 0
+    def __is_solved(self, end):
+        rate: np.ndarray = self.__calc_rate()[1:end] <= 0
         if rate.sum() == rate.size:
             return True
         return False
 
-    def add_results(self):
+    def __add_results(self):
         self.fun = self.__calc_rate()[0].item()
         templist = []
         for i in range(1, self.func.size + 1):
@@ -151,3 +151,29 @@ class SimplexSolver:
         self.x = np.array(templist)
 
         logging.debug('\nx: \n' + str(self.x) + '\n\nfunc:' + str(self.fun))
+
+    def analyze(self, new_p_0: np.ndarray):
+        n, m = self.bounds_matrix.shape
+        new_p_0_shape = new_p_0.shape
+        if len(new_p_0_shape) != 1:
+            raise Exception('wrong shape of array, 1D array expected')
+        if new_p_0_shape[0] != n:
+            raise Exception('Expected ' + str(n) + ' elements, got ' + str(new_p_0_shape[0]))
+
+        b_1xp_0 = np.dot(self.optimal_basis, new_p_0)
+        self.simplex_bound_coefficients[:, 0] = b_1xp_0
+        if (b_1xp_0 < 0).sum() != 0:
+            self.__second_phase_solve()
+
+        templist = []
+        for i in range(1, self.func.size + 1):
+            if i in self.c_basis:
+                templist.append(self.simplex_bound_coefficients[self.c_basis.tolist().index(i), 0])
+            else:
+                templist.append(0)
+        return {'fun': self.__calc_rate()[0].item(), 'x': np.array(templist)}
+
+    def __dump(self):
+        n, m = self.bounds_matrix.shape
+        self.optimal_basis = self.simplex_bound_coefficients[:, m + 1:].copy()
+        self.optimal_simplex = self.simplex_bound_coefficients.copy()
