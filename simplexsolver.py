@@ -152,26 +152,27 @@ class SimplexSolver:
 
         logging.debug('\nx: \n' + str(self.x) + '\n\nfunc:' + str(self.fun))
 
-    def analyze(self, new_p_0: np.ndarray):
-        n, m = self.bounds_matrix.shape
-        new_p_0_shape = new_p_0.shape
-        if len(new_p_0_shape) != 1:
-            raise Exception('wrong shape of array, 1D array expected')
-        if new_p_0_shape[0] != n:
-            raise Exception('Expected ' + str(n) + ' elements, got ' + str(new_p_0_shape[0]))
+    def analyze(self, precision):
+        epsilon = 1 / (10 ** precision)
+        results = []
+        p_0 = self.simplex_bound_coefficients[:, 0]
 
-        b_1xp_0 = np.dot(self.optimal_basis, new_p_0)
-        self.simplex_bound_coefficients[:, 0] = b_1xp_0
-        if (b_1xp_0 < 0).sum() != 0:
-            self.__second_phase_solve()
-
-        templist = []
-        for i in range(1, self.func.size + 1):
-            if i in self.c_basis:
-                templist.append(self.simplex_bound_coefficients[self.c_basis.tolist().index(i), 0])
-            else:
-                templist.append(0)
-        return {'fun': self.__calc_rate()[0].item(), 'x': np.array(templist)}
+        for index in range(p_0.size):
+            temp = p_0.copy()
+            while True:
+                temp[index] -= epsilon
+                b_1xp_0 = np.dot(self.optimal_basis, temp)
+                if (b_1xp_0 < 0).sum() != 0:
+                    break
+            infimum = temp[index]
+            while True:
+                temp[index] += epsilon
+                b_1xp_0 = np.dot(self.optimal_basis, temp)
+                if (b_1xp_0 < 0).sum() != 0:
+                    break
+            supremum = temp[index]
+            results.append((infimum, supremum))
+        return results
 
     def __dump(self):
         n, m = self.bounds_matrix.shape
