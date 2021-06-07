@@ -1,7 +1,7 @@
 import random
 from inspect import signature
 
-random.seed(42)
+import matplotlib.pyplot as plt
 
 
 class Phenotype:
@@ -25,28 +25,38 @@ class GenAlgo:
         self.MUTATION_PROBABILITY = mutation_probability
 
     def run(self):
+        maxFitness, minFitness, meanFitness = [], [], []
         for generation in range(self.MAX_GENERATIONS):
-            print(str(self.population))
-            mating_pool = self.__selection__()
-            elite_size = 1 if int(self.POPULATION_SIZE * 0.05) == 0 else int(self.POPULATION_SIZE * 0.05)
+            fitness = [self.fitness(*phenotype.genotype) for phenotype in self.population]
+            maxFitness.append(max(fitness))
+            minFitness.append(min(fitness))
+            meanFitness.append(sum(fitness) / len(fitness))
+            mating_pool = self.__selection__(fitness)
+            elite_size = 1 if int(self.POPULATION_SIZE * 0.1) == 0 else int(self.POPULATION_SIZE * 0.1)
             elite = sorted(self.population,
                            key=lambda phenotype: self.fitness(*phenotype.genotype),
-                           reverse=True)[:elite_size]
+                           reverse=False)[:elite_size]
             next_gen = self.__crossover__(mating_pool=mating_pool, size=self.POPULATION_SIZE - elite_size)
             self.__mutate__(next_gen)
             self.population = elite + next_gen
         result = min([self.fitness(*phenotype.genotype) for phenotype in self.population])
         print(result)
 
-    def __selection__(self):
-        """Proportional selection for minimization"""
+        plt.plot(maxFitness, color='red')
+        plt.plot(meanFitness, color='green')
+        plt.plot(minFitness, color='blue')
+        plt.xlabel('Поколение')
+        plt.ylabel('Макс/средняя/минимальная приспособленность')
+        plt.title('Зависимость максимальной и средней приспособленности от поколения')
+        plt.show()
 
-        selecting_probabilities = [self.fitness(*phenotype.genotype) for phenotype in self.population]
-        sum_probability = sum(selecting_probabilities)
+    def __selection__(self, fitness_values):
+        """Proportional selection for minimization"""
+        selecting_probabilities = fitness_values
+        sum_probability = abs(sum(selecting_probabilities))
         max_fitness = max(selecting_probabilities)
         for i in range(len(selecting_probabilities)):
-            selecting_probabilities[i] = (max_fitness - selecting_probabilities[i]) / sum_probability
-
+            selecting_probabilities[i] = abs(max_fitness - selecting_probabilities[i]) / sum_probability
         mating_pool = random.choices(population=self.population,
                                      weights=selecting_probabilities,
                                      k=self.POPULATION_SIZE)
@@ -70,7 +80,7 @@ class GenAlgo:
         indexes = random.choices(range(len(new_generation)), k=int(self.MUTATION_PROBABILITY * len(new_generation)))
         for i in indexes:
             parameter = random.randint(0, self.PARAM_SIZE - 1)
-            new_generation[i].genotype[parameter] += random.randint(-10, 10)
+            new_generation[i].genotype[parameter] += random.randint(-1, 1) * random.random()
 
 
 if __name__ == '__main__':
@@ -80,7 +90,7 @@ if __name__ == '__main__':
 
     algo = GenAlgo(objective_function=func,
                    bounds=(-100, 100),
-                   population_size=100,
-                   max_generations=500,
-                   mutation_probability=1)
+                   population_size=1000,
+                   max_generations=100,
+                   mutation_probability=0.1)
     algo.run()
