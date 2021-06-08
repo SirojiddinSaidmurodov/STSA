@@ -1,5 +1,5 @@
 import numpy as np
-from matplotlib import pyplot as plt, animation
+from matplotlib import pyplot as plt, animation, cm
 
 from GeneticAlgorithm.genalgo import GenAlgo
 
@@ -25,7 +25,8 @@ maxHistory, meanHistory, minHistory = [], [], []
 
 def update(frame, generations_list):
     ax2.clear()
-    ax2.plot_wireframe(X, Y, Z, rstride=30, cstride=30, linewidth=1)
+    ax2.plot_wireframe(X, Y, Z, rstride=30, cstride=30, linewidth=1, alpha=0.5)
+    ax2.plot_surface(X, Y, Z, rstride=8, cstride=8, alpha=0.3, cmap=cm.coolwarm, antialiased=True)
 
     ax2.scatter(2, 4, -12, marker='o', edgecolor='green', linewidths=2)
     population = generations_list[frame]
@@ -71,8 +72,8 @@ def func(x: float, y: float) -> float:
 
 algo = GenAlgo(objective_function=func,
                bounds=(-100, 100),
-               population_size=100,
-               max_generations=200,
+               population_size=200,
+               max_generations=100,
                mutation_probability=0.5,
                log=True)
 algo.run()
