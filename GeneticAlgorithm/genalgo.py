@@ -63,9 +63,9 @@ class GenAlgo:
     def __crossover__(self, mating_pool, size: int):
         result = []
         for i in range(int(size / 2)):
-            result.extend(self.__single_point_crossover__(random.choice(mating_pool), random.choice(mating_pool)))
+            result.extend(self.__single_point_crossover__(mating_pool[i * 2], mating_pool[i * 2 + 1]))
         if size % 2 != 0:
-            result.append(self.__single_point_crossover__(random.choice(mating_pool), random.choice(mating_pool))[0])
+            result.append(self.__single_point_crossover__(mating_pool[-1], random.choice(mating_pool))[0])
         return result
 
     def __single_point_crossover__(self, parent1: Phenotype, parent2: Phenotype):
@@ -80,5 +80,5 @@ class GenAlgo:
             parameter = random.randint(0, self.PARAM_SIZE - 1)
             new_generation[i].genotype[parameter] += random.randint(-1, 1) * random.random()
 
-    def get_logs(self) -> list:
+    def get_logs(self) -> list[list[Phenotype]]:
         return self.generations
