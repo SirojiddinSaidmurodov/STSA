@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ## Genetic algorithm
 
-> [![ALT-ТЕКСТ ИЗОБРАЖЕНИЯ](http://img.youtube.com/vi/-eoP6WzpQJk/0.jpg)](http://www.youtube.com/watch?v=-eoP6WzpQJk)
+> [![preview](GeneticAlgorithm/preview.gif)](http://www.youtube.com/watch?v=-eoP6WzpQJk)
 >
 > Animation on YouTube showing how it works
 ### Read more
