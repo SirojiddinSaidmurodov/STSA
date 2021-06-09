@@ -16,7 +16,7 @@ class Phenotype:
 
 class GenAlgo:
     def __init__(self, objective_function: callable, bounds: tuple[float, float], population_size: int,
-                 max_generations: int, mutation_probability: float, log: bool = False):
+                 max_generations: int, mutation_probability: float, mutation_scale: float, log: bool = False):
         self.fitness = objective_function
         self.bounds = bounds
         self.POPULATION_SIZE = population_size
@@ -26,6 +26,7 @@ class GenAlgo:
             Phenotype([random.randint(int(bounds[0]), int(bounds[1])) for _ in range(self.PARAM_SIZE)], self.fitness)
             for _ in range(self.POPULATION_SIZE)]
         self.MUTATION_PROBABILITY = mutation_probability
+        self.MUTATION_SCALE = mutation_scale
         self.log = log
         self.generations = []
 
@@ -78,7 +79,7 @@ class GenAlgo:
         indexes = random.choices(range(len(new_generation)), k=int(self.MUTATION_PROBABILITY * len(new_generation)))
         for i in indexes:
             parameter = random.randint(0, self.PARAM_SIZE - 1)
-            new_generation[i].genotype[parameter] += random.randint(-1, 1) * random.random()
+            new_generation[i].genotype[parameter] += random.randint(-1, 1) * random.random() * self.MUTATION_SCALE
 
     def get_logs(self) -> list[list[Phenotype]]:
         return self.generations
