@@ -4,13 +4,6 @@ from GeneticAlgorithm.genalgo import GenAlgo
 
 
 def func(x: float, y: float) -> float:
-    r"""Function
-
-    .. math::
-
-        3(1 - x)^2 e^{(-(x^2) - (y + 1)^2)} - 10(x/5 - x^3 - y^5) e^(-x^2 - y^2)- 1/3 e^(-(x + 1)^2 - y^2)
-
-    """
     return 3 * (1 - x) ** 2 * math.exp(-(x ** 2) - (y + 1) ** 2) - 10 * (x / 5 - x ** 3 - y ** 5) * math.exp(
         -x ** 2 - y ** 2) - 1 / 3 * math.exp(-(x + 1) ** 2 - y ** 2)
 
